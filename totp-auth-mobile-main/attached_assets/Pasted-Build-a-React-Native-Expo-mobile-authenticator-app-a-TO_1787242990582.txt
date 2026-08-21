@@ -1,0 +1,41 @@
+Build a React Native (Expo) mobile authenticator app — a TOTP code generator like Google Authenticator — that syncs with an existing backend API.
+
+STACK: Expo (React Native), TypeScript, otplib, expo-secure-store, expo-camera (for QR scanning), expo-local-authentication (biometric lock).
+
+BACKEND API (already built, base URL provided via env): 
+- POST /auth/login, /auth/signup
+- GET /accounts (list of {id, issuer, label})
+- POST /accounts (create, returns otpauth URI + secret + backup codes once)
+- GET /accounts/sync (returns account secrets for local caching)
+- DELETE /accounts/:id
+
+CORE REQUIREMENTS:
+
+1. Auth screens: login/signup, store JWT using expo-secure-store (never AsyncStorage for tokens).
+
+2. Optional app-lock: require Face ID / fingerprint (expo-local-authentication) before showing codes, toggleable in settings.
+
+3. Home screen: scrollable list of accounts, each showing:
+   - Issuer name + label
+   - Large monospace 6-digit code, split as "123 456" for readability
+   - Circular progress ring counting down the 30-second window
+   - Tap to copy code to clipboard with haptic feedback
+
+4. FULLY OFFLINE CODE GENERATION (critical requirement):
+   - On login/sync, fetch account secrets once from GET /accounts/sync and store each secret using expo-secure-store (encrypted, hardware-backed keystore on iOS/Android).
+   - Generate codes locally using otplib.authenticator.generate(secret) on a setInterval tied to device time — the app must generate valid codes with zero network connectivity after the initial sync, exactly like Google Authenticator.
+   - Time counter T = floor(Date.now() / 1000 / 30) computed on-device; no server round-trip per code.
+   - Periodically check device clock drift: if the app detects codes are consistently rejected by a verifying server (delta != 0 repeatedly), show a "check your device time / enable automatic time sync" warning — do NOT try to auto-correct the clock, just warn.
+
+5. Add account: 
+   - Scan QR via expo-camera, parse the otpauth:// URI (extract secret, issuer, label, algorithm, digits, period — support standard otpauth parameters, don't hardcode 6-digit/30s if the URI specifies otherwise).
+   - Manual entry fallback (type in the secret).
+   - POST new accounts to backend so they sync to web too.
+
+6. Backup codes screen: shown once on account creation, "I've saved these" confirmation gate, accessible again only via re-generation (never re-displayed).
+
+7. Settings: biometric lock toggle, re-sync accounts, delete account, logout, dark mode.
+
+8. Handle offline gracefully everywhere — the core code-generation screen must never show a loading spinner or error due to no network once secrets are cached; only account add/delete/sync require connectivity.
+
+Use Expo Router for navigation. Keep the UI dense and functional — this is a utility app, prioritize legibility of the 6-digit codes and countdown timers over decoration.

@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/authenticator-mobile/"
+title = "Authenticator Mobile"
+description = "A secure offline-first authenticator app that generates rotating TOTP codes locally, supports QR account setup, biometric app lock, account sync, and backup code handling."
+version = "1.0.0"
+id = "artifacts/authenticator-mobile"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/authenticator-mobile/" ]
+localPort = 21243
+
+[services.development]
+run = "pnpm --filter @workspace/authenticator-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/authenticator-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/authenticator-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "21243"
+BASE_PATH = "/authenticator-mobile/"

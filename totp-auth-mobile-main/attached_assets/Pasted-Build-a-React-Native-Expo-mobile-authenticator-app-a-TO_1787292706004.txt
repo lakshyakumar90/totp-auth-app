@@ -1,0 +1,40 @@
+Build a React Native (Expo) mobile authenticator app — a TOTP code generator like
+Google Authenticator — that pairs with an existing NestJS backend and a Next.js web
+dashboard already in this repo (`totp-authenticator-be`, `totp-authenticator-fe`).
+
+STACK: Expo (React Native) + Expo Router, TypeScript, otplib (see CRYPTO NOTE),
+expo-secure-store, expo-camera, expo-local-authentication, expo-haptics,
+expo-clipboard.
+
+## BACKEND CONTRACT (already built — do NOT change it, code against it exactly)
+
+Base URL comes from env `EXPO_PUBLIC_API_URL`
+(default `http://localhost:3000/api`; on the Android emulator use
+`http://10.0.2.2:3000/api`; iOS simulator can use localhost). CORS is enabled.
+Errors are JSON `{ "message": string }` with real status codes:
+400 validation · 401 bad/expired token · 403 not yours · 404 missing · 429 throttled.
+
+### Auth
+| Endpoint           | Body                | Response / notes |
+|--------------------|---------------------|------------------|
+| POST `/auth/signup`| `{email, password}` | → `{id, email}`. Returns NO tokens — call login immediately after to establish a session. Password must be 8–128 chars. Duplicate email → 409. |
+| POST `/auth/login` | `{email, password}` | → `{accessToken, refreshToken, accessTokenExpiresIn}` (expiresIn is a string like `"15m"`). |
+| POST `/auth/refresh`| `{refreshToken}`   | → a NEW token pair. Refresh tokens ROTATE: the old one is revoked server-side the moment you refresh. Persist the new pair to SecureStore immediately. |
+| POST `/auth/logout`| Bearer required     | Revokes the stored refresh token. Clear SecureStore regardless of response. |
+
+Attach `Authorization: Bearer <accessToken>` to every authenticated call.
+On any 401: attempt ONE refresh, retry the original call; if refresh also fails,
+wipe tokens and return to login.
+
+### Accounts (all require Bearer)
+| Endpoint              | Notes |
+|-----------------------|-------|
+| GET `/accounts`       | → `[{id, issuer, label}]` — NEVER contains secrets. |
+| POST `/accounts`      | Body `{issuer, label}` (issuer ≤128 chars, label ≤256, both required). → `{id, issuer, label, otpauthUri, qrCode, backupCodes}` where `qrCode` is a data-URL PNG and `backupCodes` is 10 single-use strings. **THE BACKEND GENERATES THE SECRET — you cannot submit your own.** Parse `secret=` out of the returned `otpauthUri` and cache it at once; that is the ONLY moment an API-created account's secret is available in plaintext. |
+| DELETE `/accounts/:id`| → `{success: true}`. Also delete the locally cached secret. |
+
+### ⚠️ CRITICAL — read before building offline mode
+`GET /accounts/sync` exists and returns `[{id, issuer, label, encryptedSecret}]`,
+but `encryptedSecret` is AES-256-GCM ciphertext encrypted WITH THE SERVER'S KEY.
+No client can ever decrypt it. Consequences:
+- A plaintext secret reaches the device in exactly TWO ways: (a) the `
