@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0b;
+  --foreground: #f5f5f7;
+
+  /* Clears design system */
+  --bg-primary: #0a0a0b;
+  --bg-surface: #141416;
+  --bg-surface-alt: #1a1a1d;
+  --border-subtle: #2a2a2e;
+  --accent-primary: #8b5cf6;
+  --accent-primary-hover: #7c3aed;
+  --text-primary: #f5f5f7;
+  --text-secondary: #a1a1aa;
+  --text-muted: #6b6b70;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--bg-surface);
+  --color-surface-alt: var(--bg-surface-alt);
+  --color-hairline: var(--border-subtle);
+  --color-accent: var(--accent-primary);
+  --color-accent-hover: var(--accent-primary-hover);
+  --color-secondary-text: var(--text-secondary);
+  --color-muted-text: var(--text-muted);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+/* Mono uppercase eyebrow tag (system-log feel) */
+.eyebrow {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
+  background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+  border-radius: 999px;
+  padding: 5px 12px;
+  display: inline-block;
+}
+
+/* Dotted grid texture for CTA/hero backdrops */
+.dot-grid {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--text-muted) 38%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+}
+
+/* Window chrome dots for mock panels */
+.chrome-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  display: inline-block;
+  background: var(--border-subtle);
+}
+.chrome-dots span:first-child {
+  background: #3f3f46;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent-primary) 40%, transparent);
+}
